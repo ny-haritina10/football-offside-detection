@@ -16,11 +16,11 @@ public class FootballAnalyzer extends JFrame {
     private JLabel imageLabel, statusLabel;
     private String selectedImagePath;
     private Font gameFont;
-    private JRadioButton standardOrientationBtn, reversedOrientationBtn;
+    private JComboBox<String> orientationComboBox; // Changed from JRadioButton to JComboBox
     private boolean isReversedOrientation = false;
 
     public FootballAnalyzer() {
-        setTitle("Football Offside Analyzer Pro");
+        setTitle("Video Assistance Referee (VAR)");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
         
@@ -55,17 +55,20 @@ public class FootballAnalyzer extends JFrame {
             InputStream is = getClass().getResourceAsStream("/fonts/Gameplay.ttf");
             gameFont = Font.createFont(Font.TRUETYPE_FONT, is).deriveFont(14f);
             GraphicsEnvironment.getLocalGraphicsEnvironment().registerFont(gameFont);
-        } catch (Exception e) {
-            gameFont = new Font("Arial", Font.BOLD, 14);
+        } 
+        
+        catch (Exception e) {
+            gameFont = new Font("Arial Bold Italic", Font.BOLD, 14);
         }
     }
 
     private void setupTheme() {
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-            UIManager.put("Button.background", new Color(69, 173, 168));
-            UIManager.put("Button.foreground", Color.BLACK);
-            UIManager.put("Label.foreground", Color.BLACK);
+            UIManager.put("Panel.background", new Color(173, 216, 230)); // Light blue background
+            UIManager.put("Button.background", new Color(69, 173, 168)); // Button color
+            UIManager.put("Button.foreground", Color.BLACK); // Button text color
+            UIManager.put("Label.foreground", Color.BLACK); // Label text color
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -73,7 +76,7 @@ public class FootballAnalyzer extends JFrame {
 
     private JPanel createHeaderPanel() {
         JPanel headerPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        JLabel titleLabel = new JLabel("Football Offside Analyzer Pro");
+        JLabel titleLabel = new JLabel("Video Assistance Referee (VAR)");
         titleLabel.setFont(gameFont.deriveFont(24f));
         headerPanel.add(titleLabel);
         return headerPanel;
@@ -81,8 +84,10 @@ public class FootballAnalyzer extends JFrame {
 
     private JPanel createButtonPanel() {
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
-        selectImageButton = new JButton("Select Image");
-        analyzeButton = new JButton("Analyze");
+        
+        selectImageButton = new JButton("Choose an image");
+        analyzeButton = new JButton("VAR");
+        
         analyzeButton.setEnabled(false);
         
         selectImageButton.addActionListener(e -> selectImage());
@@ -108,20 +113,17 @@ public class FootballAnalyzer extends JFrame {
 
     private JPanel createOrientationPanel() {
         JPanel orientationPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        standardOrientationBtn = new JRadioButton("Standard", true);
-        reversedOrientationBtn = new JRadioButton("Reversed");
         
-        ButtonGroup orientationGroup = new ButtonGroup();
+        // Create a JComboBox for orientation selection
+        String[] orientations = { "Standard", "Reversed" };
+        orientationComboBox = new JComboBox<>(orientations);
         
-        orientationGroup.add(standardOrientationBtn);
-        orientationGroup.add(reversedOrientationBtn);
+        orientationComboBox.addActionListener(e -> {
+            isReversedOrientation = orientationComboBox.getSelectedItem().equals("Reversed");
+        });
         
-        standardOrientationBtn.addActionListener(e -> isReversedOrientation = false);
-        reversedOrientationBtn.addActionListener(e -> isReversedOrientation = true);
-        
-        orientationPanel.add(new JLabel("Team Orientation: "));
-        orientationPanel.add(standardOrientationBtn);
-        orientationPanel.add(reversedOrientationBtn);
+        orientationPanel.add(new JLabel("Side: "));
+        orientationPanel.add(orientationComboBox); // Add JComboBox instead of radio buttons
         
         return orientationPanel;
     }
@@ -129,7 +131,7 @@ public class FootballAnalyzer extends JFrame {
     private void verifyOpenCV() {
         try {
             System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
-            statusLabel.setText("OpenCV loaded successfully");
+            statusLabel.setText("Welcome !");
         } catch (UnsatisfiedLinkError e) {
             JOptionPane.showMessageDialog(this, "Failed to load OpenCV library.", "OpenCV Error", JOptionPane.ERROR_MESSAGE);
             statusLabel.setText("OpenCV not loaded - functionality will be limited");
@@ -154,7 +156,7 @@ public class FootballAnalyzer extends JFrame {
             }
             displayImage(selectedImagePath);
             analyzeButton.setEnabled(true);
-            statusLabel.setText("Image selected: " + selectedFile.getName());
+            statusLabel.setText("Current image: " + selectedFile.getName());
         }
     }
 
@@ -169,7 +171,9 @@ public class FootballAnalyzer extends JFrame {
             imageLabel.setIcon(new ImageIcon(scaledImage));
             imageLabel.revalidate();
             imageLabel.repaint();
-        } catch (Exception e) {
+        } 
+        
+        catch (Exception e) {
             JOptionPane.showMessageDialog(this,"Error displaying image: " + e.getMessage(),"Display Error",JOptionPane.ERROR_MESSAGE);
         }
     }

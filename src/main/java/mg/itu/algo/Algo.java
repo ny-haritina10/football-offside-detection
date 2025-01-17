@@ -37,7 +37,6 @@ public class Algo {
         // Process image
         FieldOrientation orientation = determineFieldOrientation(image);
         List<Player> players = ImageProcessingUtils.detectPlayers(image);
-        
         Point ballCenter = ImageProcessingUtils.detectBall(image);
         
         if (players.isEmpty()) 
@@ -55,6 +54,7 @@ public class Algo {
         
         Size fieldSize = new Size(image.width(), image.height());
         detectGoalkeepers(players, fieldSize, image, orientation);
+
         
         Player playerWithBall = ImageProcessingUtils.findClosestPlayer(players, ballCenter);
         if (playerWithBall == null) 
@@ -94,6 +94,11 @@ public class Algo {
             ); 
         }
         
+        // Reset offside status for all players
+        for (Player player : players) {
+            player.setOffside(false);
+        }
+
         List<Player> offsidePlayers = PlayerUtils.findOffsidePlayers(
             players, 
             lastDefenderPlayer, 
@@ -102,7 +107,15 @@ public class Algo {
             orientation
         );
 
+        // Mark players as offside
+        for (Player offside : offsidePlayers) {
+            offside.setOffside(true);
+        }
+
+        // draw analyse
         DrawingUtils.markOffsidePlayers(image, offsidePlayers);
+        DrawingUtils.drawAttackArrowsAndMarkReceivers(image, playerWithBall, players, orientation);   
+        DrawingUtils.drawAttackArrows(image, playerWithBall, players, orientation);
         
         // Write the result image and verify
         boolean writeSuccess = Imgcodecs.imwrite(IMG_FILE_PATH, image);

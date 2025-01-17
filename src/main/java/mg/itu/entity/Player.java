@@ -6,10 +6,12 @@ public class Player {
     
     public Point position;
     public boolean isBlueTeam;
+    public boolean isOffside;  // New field
 
     public Player(Point position, boolean isBlueTeam) {
         this.position = position;
         this.isBlueTeam = isBlueTeam;
+        this.isOffside = false;  // Initialize as not offside
     }
 
     public Point getPosition() {
@@ -26,5 +28,13 @@ public class Player {
 
     public void setBlueTeam(boolean blueTeam) {
         isBlueTeam = blueTeam;
+    }
+
+    public boolean isOffside() {
+        return isOffside;
+    }
+
+    public void setOffside(boolean offside) {
+        this.isOffside = offside;
     }
 }

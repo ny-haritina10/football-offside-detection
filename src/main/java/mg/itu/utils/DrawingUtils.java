@@ -1,5 +1,7 @@
 package mg.itu.utils;
 
+import java.util.List;
+
 import org.opencv.core.*;
 import org.opencv.imgproc.Imgproc;
 
@@ -24,6 +26,15 @@ public class DrawingUtils {
     private static final int X_THICKNESS = 6;
     private static final int PLAYER_CIRCLE_RADIUS = 25; // Adjusted radius
     private static final int ADDITIONAL_OFFSET = 1;    // Fine-tuning offset
+
+    private static final Scalar ATTACK_ARROW_COLOR = new Scalar(0, 255, 0); // Green in BGR
+    private static final int ARROW_LINE_THICKNESS = 2;
+    private static final int ARROW_HEAD_LENGTH = 20;
+    private static final double ARROW_HEAD_ANGLE = Math.PI / 6; // 30 degrees
+    private static final int RECEIVER_CIRCLE_RADIUS = 35;
+    private static final int RECEIVER_CIRCLE_THICKNESS = 3;
+    private static final Scalar RECEIVER_MARK_COLOR = new Scalar(0, 255, 0);
+
 
     public static void drawLastDefenderAndOffsideLine(Mat image, Size fieldSize, Player lastDefender, 
     Scalar color, String label, Algo.FieldOrientation orientation) {
@@ -83,6 +94,96 @@ public class DrawingUtils {
             // Draw the X
             Imgproc.line(image, topLeft, bottomRight, OFFSIDE_PLAYER_COLOR, X_THICKNESS);
             Imgproc.line(image, topRight, bottomLeft, OFFSIDE_PLAYER_COLOR, X_THICKNESS);
+        }
+    }    
+
+    public static void drawAttackArrows(Mat image, Player playerWithBall, List<Player> players, Algo.FieldOrientation orientation) {
+        if (playerWithBall == null) return;
+        
+        for (Player player : players) {
+            // Only draw arrows to teammates who are not offside and are in front of the ball
+            if (player != playerWithBall && player.isBlueTeam == playerWithBall.isBlueTeam) {
+                boolean isAheadOfBall = isPlayerAheadOfBall(playerWithBall, player, orientation);
+                
+                if (isAheadOfBall && !isPlayerOffside(player)) {
+                    drawArrow(image, playerWithBall.position, player.position);
+                }
+            }
+        }
+    }
+
+    private static boolean isPlayerOffside(Player player) 
+    { return player.isOffside; }
+
+    public static void drawAttackArrowsAndMarkReceivers(Mat image, Player playerWithBall, List<Player> players, Algo.FieldOrientation orientation) {
+        if (playerWithBall == null) return;
+        
+        for (Player player : players) {
+            // Only consider teammates who are not offside and are in front of the ball
+            if (player != playerWithBall && player.isBlueTeam == playerWithBall.isBlueTeam) {
+                boolean isAheadOfBall = isPlayerAheadOfBall(playerWithBall, player, orientation);
+                
+                if (isAheadOfBall && !player.isOffside) {
+                    // Draw arrow to the player
+                    drawArrow(image, playerWithBall.position, player.position);
+                    // Mark the player as potential receiver
+                    markReceiver(image, player);
+                }
+            }
+        }
+    }
+
+    private static void drawArrow(Mat image, Point start, Point end) {
+        // Draw the main line
+        Imgproc.line(image, start, end, ATTACK_ARROW_COLOR, ARROW_LINE_THICKNESS);
+        
+        // Calculate arrow head points
+        double angle = Math.atan2(end.y - start.y, end.x - start.x);
+        
+        Point arrowHead1 = new Point(
+            end.x - ARROW_HEAD_LENGTH * Math.cos(angle + ARROW_HEAD_ANGLE),
+            end.y - ARROW_HEAD_LENGTH * Math.sin(angle + ARROW_HEAD_ANGLE)
+        );
+        
+        Point arrowHead2 = new Point(
+            end.x - ARROW_HEAD_LENGTH * Math.cos(angle - ARROW_HEAD_ANGLE),
+            end.y - ARROW_HEAD_LENGTH * Math.sin(angle - ARROW_HEAD_ANGLE)
+        );
+        
+        // Draw arrow head
+        Imgproc.line(image, end, arrowHead1, ATTACK_ARROW_COLOR, ARROW_LINE_THICKNESS);
+        Imgproc.line(image, end, arrowHead2, ATTACK_ARROW_COLOR, ARROW_LINE_THICKNESS);
+    }
+
+    private static void markReceiver(Mat image, Player player) {
+        // Draw a circle around the potential receiver
+        Imgproc.circle(
+            image, 
+            player.position, 
+            RECEIVER_CIRCLE_RADIUS, 
+            RECEIVER_MARK_COLOR, 
+            RECEIVER_CIRCLE_THICKNESS
+        );
+        
+        // Draw a pulsing effect with a larger, thinner circle
+        Imgproc.circle(
+            image, 
+            player.position, 
+            RECEIVER_CIRCLE_RADIUS + 10, 
+            RECEIVER_MARK_COLOR, 
+            1
+        );
+    }
+
+    private static boolean isPlayerAheadOfBall(Player playerWithBall, Player targetPlayer, Algo.FieldOrientation orientation) {
+        if (orientation == Algo.FieldOrientation.HORIZONTAL) {
+            return playerWithBall.isBlueTeam ? 
+                targetPlayer.position.x > playerWithBall.position.x :
+                targetPlayer.position.x < playerWithBall.position.x;
+        } else {
+            return playerWithBall.isBlueTeam ? 
+                targetPlayer.position.y > playerWithBall.position.y :
+                targetPlayer.position.y < playerWithBall.position.y;
         }
     }
 }
