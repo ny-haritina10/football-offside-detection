@@ -108,7 +108,7 @@ public class PlayerUtils {
                 lastDefender.position.x : lastDefender.position.y;
 
         for (Player player : players) {
-            if (player.isBlueTeam == isBlueTeam && player != playerWithBall) {
+            if (player.isBlueTeam == isBlueTeam /* && player != playerWithBall */ ) {
                 double playerPosition = orientation == Algo.FieldOrientation.HORIZONTAL ? 
                         player.position.x : player.position.y;
                 double ballPosition = orientation == Algo.FieldOrientation.HORIZONTAL ? 
@@ -119,7 +119,7 @@ public class PlayerUtils {
                 boolean isAheadOfBall = isBlueTeam ? 
                         playerPosition > ballPosition : playerPosition < ballPosition;
 
-                if (isAheadOfOffsideLine && isAheadOfBall) {
+                if (isAheadOfOffsideLine /*&& isAheadOfBall */) {
                     offsidePlayers.add(player);
                 }
             }

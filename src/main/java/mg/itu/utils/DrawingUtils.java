@@ -35,7 +35,50 @@ public class DrawingUtils {
     private static final int RECEIVER_CIRCLE_THICKNESS = 3;
     private static final Scalar RECEIVER_MARK_COLOR = new Scalar(0, 255, 0);
 
+    private static final Scalar GOAL_TEXT_COLOR = new Scalar(0, 255, 0); // Green in BGR
+    private static final Scalar OFFSIDE_TEXT_COLOR = new Scalar(0, 0, 255); // Red in BGR
+    private static final int GOAL_TEXT_THICKNESS = 3;
+    private static final int GOAL_TEXT_FONT_SCALE = 4;
+    private static final Scalar GOAL_BALL_COLOR = new Scalar(0, 165, 255); // Orange in BGR
+    private static final int GOAL_BALL_RADIUS = 10;
 
+    public static void drawGoalIndicator(Mat image, Point ballPosition) {
+        // Draw the ball in orange
+        Imgproc.circle(image, ballPosition, GOAL_BALL_RADIUS, GOAL_BALL_COLOR, -1);
+        
+        // Calculate text position (centered)
+        Size textSize = Imgproc.getTextSize("GOAL", Imgproc.FONT_HERSHEY_SIMPLEX, 
+                                          GOAL_TEXT_FONT_SCALE, GOAL_TEXT_THICKNESS, null);
+        Point textPosition = new Point(
+            (image.width() - textSize.width) / 2,
+            (image.height() + textSize.height) / 2
+        );
+        
+        // Draw "GOAL" text
+        Imgproc.putText(image, "GOAL", textPosition, 
+                       Imgproc.FONT_HERSHEY_SIMPLEX, GOAL_TEXT_FONT_SCALE, 
+                       GOAL_TEXT_COLOR, GOAL_TEXT_THICKNESS);
+    }
+
+    public static void drawOffsideIndicator(Mat image, List<Player> offsidePlayers) {
+        // Draw existing offside markings
+        markOffsidePlayers(image, offsidePlayers);
+        
+        // Add "OFFSIDE" text if there are offside players
+        if (!offsidePlayers.isEmpty()) {
+            Size textSize = Imgproc.getTextSize("OFFSIDE", Imgproc.FONT_HERSHEY_SIMPLEX, 
+                                              GOAL_TEXT_FONT_SCALE, GOAL_TEXT_THICKNESS, null);
+            Point textPosition = new Point(
+                (image.width() - textSize.width) / 2,
+                (image.height() + textSize.height) / 2
+            );
+            
+            Imgproc.putText(image, "OFFSIDE", textPosition, 
+                           Imgproc.FONT_HERSHEY_SIMPLEX, GOAL_TEXT_FONT_SCALE, 
+                           OFFSIDE_TEXT_COLOR, GOAL_TEXT_THICKNESS);
+        }
+    }
+    
     public static void drawLastDefenderAndOffsideLine(Mat image, Size fieldSize, Player lastDefender, 
     Scalar color, String label, Algo.FieldOrientation orientation) {
         if (lastDefender == null) return;
