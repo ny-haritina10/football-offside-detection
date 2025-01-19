@@ -24,8 +24,6 @@ public class Algo {
     public static final int ATTACK_ARROW_OFFSET = 100;
     public static final String IMG_FILE_PATH = "img/receive.jpg";
     public static final String IMG_FILE_PATH_2 = "img/shoot.jpg";
-
-
     private static int blueTeamScore = 0;
     private static int redTeamScore = 0;
 
@@ -260,5 +258,16 @@ public class Algo {
             }
             return new AnalysisResult(isOffside, isGoal, message);
         }
+    }
+
+    public static int getBlueTeamScore() 
+    { return blueTeamScore; }
+    
+    public static int getRedTeamScore() 
+    { return redTeamScore; }
+
+    public static void resetScores() {
+        blueTeamScore = 0;
+        redTeamScore = 0;
     }
 }

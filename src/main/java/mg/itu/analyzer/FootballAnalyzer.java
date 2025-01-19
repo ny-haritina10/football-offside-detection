@@ -4,11 +4,14 @@ import javax.swing.*;
 import java.awt.*;
 import java.io.File;
 import java.io.InputStream;
+import java.sql.SQLException;
+
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.imgcodecs.Imgcodecs;
 import mg.itu.algo.Algo;
 import mg.itu.algo.Algo.FieldOrientation;
+import mg.itu.db.Database;
 import mg.itu.algo.Algo.AnalysisResult;
 
 public class FootballAnalyzer extends JFrame {
@@ -23,6 +26,12 @@ public class FootballAnalyzer extends JFrame {
     private JComboBox<String> orientationComboBox;
     private boolean isReversedOrientation = false;
     private FieldOrientation imageOrientation;
+
+    private JButton newMatchButton;
+    private int currentMatchId = -1;
+    private Database db;
+    private int blueTeamScore = 0;
+    private int redTeamScore = 0;
 
     public FootballAnalyzer() {
         setTitle("Video Assistance Referee (VAR)");
@@ -54,7 +63,22 @@ public class FootballAnalyzer extends JFrame {
         setLocationRelativeTo(null);
         
         verifyOpenCV();
+        initializeDatabase();
     }  
+
+    private void initializeDatabase() {
+        try {
+            db = Database.getInstance();
+            statusLabel.setText("Database connected successfully");
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this,
+                "Failed to connect to database: " + e.getMessage(),
+                "Database Error",
+                JOptionPane.ERROR_MESSAGE);
+            statusLabel.setText("Database connection failed");
+        }
+    }
 
     private void loadCustomFont() {
         try {
@@ -95,6 +119,7 @@ public class FootballAnalyzer extends JFrame {
     private JPanel createButtonPanel() {
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
         
+        newMatchButton = createNewMatchButton();
         selectReceiveImageButton = new JButton("Select Receive Image");
         selectShootImageButton = new JButton("Select Shot Image");
         analyzeButton = new JButton("Analyze Play");
@@ -105,6 +130,7 @@ public class FootballAnalyzer extends JFrame {
         selectShootImageButton.addActionListener(e -> selectImage(false));
         analyzeButton.addActionListener(e -> analyzePlay());
         
+        buttonPanel.add(newMatchButton);
         buttonPanel.add(selectReceiveImageButton);
         buttonPanel.add(selectShootImageButton);
         buttonPanel.add(analyzeButton);
@@ -168,6 +194,14 @@ public class FootballAnalyzer extends JFrame {
         scoreLabel.setFont(gameFont.deriveFont(18f));
         scorePanel.add(scoreLabel);
         return scorePanel;
+    }
+
+    // Add this method to create the new match button
+    private JButton createNewMatchButton() {
+        newMatchButton = new JButton("New Match");
+        newMatchButton.setFont(gameFont);
+        newMatchButton.addActionListener(e -> startNewMatch());
+        return newMatchButton;
     }
 
     private JPanel addFieldOrientationPanel() {
@@ -274,7 +308,46 @@ public class FootballAnalyzer extends JFrame {
         }
     }
 
+    private void startNewMatch() {
+        try {
+            // If there's an ongoing match, end it first
+            if (currentMatchId != -1) {
+                db.endMatch(currentMatchId);
+            }
+            
+            // Start new match
+            currentMatchId = db.createNewMatch();
+            Algo.resetScores(); 
+
+            blueTeamScore = 0;
+            redTeamScore = 0;
+            scoreLabel.setText("Score: Blue 0 - Red 0");
+            statusLabel.setText("New match started - ID: " + currentMatchId);
+            
+            // Clear existing images
+            receiveImageLabel.setIcon(null);
+            shootImageLabel.setIcon(null);
+            selectedReceiveImagePath = null;
+            selectedShootImagePath = null;
+            analyzeButton.setEnabled(false);
+            
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this,
+                "Failed to start new match: " + e.getMessage(),
+                "Database Error",
+                JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
     private void analyzePlay() {
+        if (currentMatchId == -1) {
+            JOptionPane.showMessageDialog(this,
+                "Please start a new match first",
+                "Match Required",
+                JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
         if (selectedReceiveImagePath == null || selectedShootImagePath == null) return;
         
         selectReceiveImageButton.setEnabled(false);
@@ -298,6 +371,35 @@ public class FootballAnalyzer extends JFrame {
                 try {
                     AnalysisResult result = get();
                     
+                    // Save match action to database
+                    try {
+                        /// TODO: implementing this 
+                        String scoringTeam = "";
+                        
+                        db.saveMatchAction(
+                            currentMatchId,
+                            selectedReceiveImagePath,
+                            selectedShootImagePath,
+                            result.isOffside,
+                            result.isGoal,
+                            scoringTeam,
+                            result.message
+                        );
+                        
+                        // Update match scores using the actual scores from Algo class
+                        db.updateMatchScore(currentMatchId, Algo.getBlueTeamScore(), Algo.getRedTeamScore());
+                        
+                        // Update the score label
+                        scoreLabel.setText("Score: Blue " + Algo.getBlueTeamScore() + 
+                                        " - Red " + Algo.getRedTeamScore());
+                        
+                    } catch (SQLException e) {
+                        JOptionPane.showMessageDialog(FootballAnalyzer.this,
+                            "Failed to save match data: " + e.getMessage(),
+                            "Database Error",
+                            JOptionPane.ERROR_MESSAGE);
+                    }
+                    
                     // Display the analysis results
                     statusLabel.setText(result.message);
                     
@@ -309,7 +411,9 @@ public class FootballAnalyzer extends JFrame {
                     selectShootImageButton.setEnabled(true);
                     analyzeButton.setEnabled(true);
                     
-                } catch (Exception e) {
+                } 
+                
+                catch (Exception e) {
                     statusLabel.setText("Analysis failed: " + e.getMessage());
                     JOptionPane.showMessageDialog(FootballAnalyzer.this,
                         "Error analyzing play: " + e.getMessage(),
