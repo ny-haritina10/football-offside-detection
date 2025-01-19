@@ -12,6 +12,38 @@ public class GoalCageUtils {
         System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
     }
 
+    public static boolean isBallInsideGoal(Point ballPosition, GoalCageUtils.Goal goal) {
+        double x1 = goal.post1.x1;
+        double y1 = goal.post1.y1;
+        double x2 = goal.post2.x1;
+        double y2 = goal.post2.y1;
+        
+        double crossbarY = goal.crossbar.y1; // Assuming crossbar is horizontal
+        
+        boolean isBetweenPosts = ballPosition.x >= Math.min(x1, x2) && 
+                                ballPosition.x <= Math.max(x1, x2);
+        
+        boolean isTopGoal = crossbarY > Math.max(y1, y2);
+        
+        // check if ball is at the right height, accounting for goal orientation
+        boolean isAtRightHeight;
+        if (isTopGoal) {
+            // for top goal, ball should be below crossbar but above posts
+            isAtRightHeight = ballPosition.y <= crossbarY && 
+                             ballPosition.y >= Math.min(y1, y2);
+        } 
+        
+        else {
+            // for bottom goal, ball should be above crossbar but below posts
+            isAtRightHeight = ballPosition.y >= crossbarY && 
+                             ballPosition.y <= Math.max(y1, y2);
+        }
+        
+        // Check if ball is within the goal depth
+        boolean isWithinDepth = true; 
+        return isBetweenPosts && isAtRightHeight && isWithinDepth;
+    }
+
     public static List<Goal> detectGoal(String imagePath) {
         // Read and preprocess image
         Mat source = Imgcodecs.imread(imagePath);

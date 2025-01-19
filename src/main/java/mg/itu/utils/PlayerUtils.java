@@ -1,9 +1,11 @@
 package mg.itu.utils;
 
+import org.opencv.core.Mat;
 import org.opencv.core.Point;
 import org.opencv.core.Size;
 
 import mg.itu.algo.Algo;
+import mg.itu.algo.Algo.FieldOrientation;
 import mg.itu.entity.Player;
 
 import java.util.ArrayList;
@@ -108,6 +110,7 @@ public class PlayerUtils {
                 lastDefender.position.x : lastDefender.position.y;
 
         for (Player player : players) {
+            // offside rule adaptation
             if (player.isBlueTeam == isBlueTeam /* && player != playerWithBall */ ) {
                 double playerPosition = orientation == Algo.FieldOrientation.HORIZONTAL ? 
                         player.position.x : player.position.y;
@@ -119,6 +122,7 @@ public class PlayerUtils {
                 boolean isAheadOfBall = isBlueTeam ? 
                         playerPosition > ballPosition : playerPosition < ballPosition;
 
+                // offside rules adapation 
                 if (isAheadOfOffsideLine /*&& isAheadOfBall */) {
                     offsidePlayers.add(player);
                 }
@@ -138,5 +142,17 @@ public class PlayerUtils {
                 ? new Point(fieldSize.width / 2, 0)
                 : new Point(fieldSize.width / 2, fieldSize.height);
         }
+    }
+    
+    public static void detectGoalkeepers(List<Player> players, Size fieldSize, Mat image, FieldOrientation orientation) {
+        if (players.isEmpty()) return;
+
+        Point blueGoal = PlayerUtils.getGoalPosition(fieldSize, true, orientation);
+        Point redGoal = PlayerUtils.getGoalPosition(fieldSize, false, orientation);
+
+        Player blueGoalkeeper = PlayerUtils.findGoalkeeper(players, true, blueGoal);
+        Player redGoalkeeper = PlayerUtils.findGoalkeeper(players, false, redGoal);
+
+        // do something with GK if required
     }
 }

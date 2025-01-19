@@ -13,7 +13,7 @@ import mg.itu.algo.Algo.AnalysisResult;
 
 public class FootballAnalyzer extends JFrame {
 
-    private static final String RECEIVE_IMG_PATH = "img/picture.jpg";
+    private static final String RECEIVE_IMG_PATH = "img/receive.jpg";
     private static final String SHOOT_IMG_PATH = "img/shoot.jpg";
 
     private JButton selectReceiveImageButton, selectShootImageButton, analyzeButton;
@@ -305,7 +305,6 @@ public class FootballAnalyzer extends JFrame {
                     displayImage(RECEIVE_IMG_PATH, receiveImageLabel);
                     displayImage(SHOOT_IMG_PATH, shootImageLabel);
                     
-                    // Enable buttons for next analysis
                     selectReceiveImageButton.setEnabled(true);
                     selectShootImageButton.setEnabled(true);
                     analyzeButton.setEnabled(true);

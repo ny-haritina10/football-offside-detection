@@ -22,7 +22,9 @@ public class Algo {
 
     // CONSTANTS
     public static final int ATTACK_ARROW_OFFSET = 100;
-    public static final String IMG_FILE_PATH = "img/picture.jpg";
+    public static final String IMG_FILE_PATH = "img/receive.jpg";
+    public static final String IMG_FILE_PATH_2 = "img/shoot.jpg";
+
 
     private static int blueTeamScore = 0;
     private static int redTeamScore = 0;
@@ -70,7 +72,7 @@ public class Algo {
         }
         
         Size fieldSize = new Size(image.width(), image.height());
-        detectGoalkeepers(players, fieldSize, image, orientation);
+        PlayerUtils.detectGoalkeepers(players, fieldSize, image, orientation);
 
         Player playerWithBall = ImageProcessingUtils.findClosestPlayer(players, ballCenter);
         if (playerWithBall == null) 
@@ -192,7 +194,7 @@ public class Algo {
                 
                 if (finalBallPosition != null && !cages.isEmpty()) {
                     for (GoalCageUtils.Goal goal : cages) {
-                        if (isBallInsideGoal(finalBallPosition, goal)) {
+                        if (GoalCageUtils.isBallInsideGoal(finalBallPosition, goal)) {
                             isGoal = true;
                             DrawingUtils.drawGoalIndicator(shootFrame, finalBallPosition);
                             break;
@@ -200,22 +202,44 @@ public class Algo {
                     }
                 }  
             } 
+            catch (Exception e) { 
+                System.err.println("Error during goal detection: " + e.getMessage()); 
+            }
             
-            catch (Exception e) 
-            { System.err.println("Error during goal detection: " + e.getMessage()); }
-
-            // Save the modified shoot frame
-            Imgcodecs.imwrite(IMG_FILE_PATH.replace("picture.jpg", "shoot.jpg"), shootFrame);
+            // Always save the shoot frame, regardless of goal detection outcome
+            boolean writeSuccess = Imgcodecs.imwrite(IMG_FILE_PATH_2, shootFrame);
+            if (!writeSuccess) {
+                throw new Exception("Failed to write shoot image result");
+            }
 
             if (isGoal) {
-                if (receivingPlayer.isBlueTeam) {
+
+                // bleu and not reversed
+                if (receivingPlayer.isBlueTeam && !isReversedOrientation) {
                     blueTeamScore++;
                     message = "Goal for Blue team! Score: Blue " + blueTeamScore + " - Red " + redTeamScore;
                 } 
-                
-                else {
+
+                // not bleu and not reversed
+                else if (!receivingPlayer.isBlueTeam && !isReversedOrientation){
                     redTeamScore++;
                     message = "Goal for Red team! Score: Blue " + blueTeamScore + " - Red " + redTeamScore;
+                }
+
+                // bleu but reversed (red)
+                else if (receivingPlayer.isBlueTeam && isReversedOrientation) {
+                    redTeamScore++;
+                    message = "Goal for Blue team! Score: Blue " + blueTeamScore + " - Red " + redTeamScore;
+                }
+
+                // red but reversed (bleu)
+                else if (!receivingPlayer.isBlueTeam && isReversedOrientation) {
+                    blueTeamScore++;
+                    message = "Goal for Blue team! Score: Blue " + blueTeamScore + " - Red " + redTeamScore;
+                }
+
+                else {
+                    message = "Goal";
                 }
             } 
             
@@ -227,55 +251,14 @@ public class Algo {
         }
 
         else {
-            message = "Offside! Goal disallowed.";
+            message = "Offside! Action disallowed.";
+            
+            Mat shootFrame = Imgcodecs.imread(shootImage);
+            boolean writeSuccess = Imgcodecs.imwrite(IMG_FILE_PATH_2, shootFrame);
+            if (!writeSuccess) {
+                throw new Exception("Failed to write shoot image result");
+            }
             return new AnalysisResult(isOffside, isGoal, message);
         }
-    }
-
-    private static boolean isBallInsideGoal(Point ballPosition, GoalCageUtils.Goal goal) {
-        // Get goal posts coordinates
-        double x1 = goal.post1.x1;
-        double y1 = goal.post1.y1;
-        double x2 = goal.post2.x1;
-        double y2 = goal.post2.y1;
-        
-        // Get crossbar coordinates
-        double crossbarY = goal.crossbar.y1; // Assuming crossbar is horizontal
-        
-        // Check if ball is between the posts horizontally
-        boolean isBetweenPosts = ballPosition.x >= Math.min(x1, x2) && 
-                                ballPosition.x <= Math.max(x1, x2);
-        
-        // Determine if this is a top or bottom goal
-        boolean isTopGoal = crossbarY > Math.max(y1, y2);
-        
-        // Check if ball is at the right height, accounting for goal orientation
-        boolean isAtRightHeight;
-        if (isTopGoal) {
-            // For top goal, ball should be below crossbar but above posts
-            isAtRightHeight = ballPosition.y <= crossbarY && 
-                             ballPosition.y >= Math.min(y1, y2);
-        } else {
-            // For bottom goal, ball should be above crossbar but below posts
-            isAtRightHeight = ballPosition.y >= crossbarY && 
-                             ballPosition.y <= Math.max(y1, y2);
-        }
-        
-        // Check if ball is within the goal depth
-        boolean isWithinDepth = true; // Simplified check since depth is hard to determine from 2D image
-        
-        return isBetweenPosts && isAtRightHeight && isWithinDepth;
-    }
-
-    private static void detectGoalkeepers(List<Player> players, Size fieldSize, Mat image, FieldOrientation orientation) {
-        if (players.isEmpty()) return;
-
-        Point blueGoal = PlayerUtils.getGoalPosition(fieldSize, true, orientation);
-        Point redGoal = PlayerUtils.getGoalPosition(fieldSize, false, orientation);
-
-        Player blueGoalkeeper = PlayerUtils.findGoalkeeper(players, true, blueGoal);
-        Player redGoalkeeper = PlayerUtils.findGoalkeeper(players, false, redGoal);
-
-        // do something with GK if required
     }
 }
